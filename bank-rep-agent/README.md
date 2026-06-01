@@ -11,6 +11,10 @@ After customer verification, **Jenny (the LLM) calls tools directly**: `get_acco
 
 ## Setup
 
+From the monorepo root you can run `./init-projects` to create `.env` files and run `uv sync` for all packages.
+
+Or manually:
+
 1. Copy the example env file (if you don't already have `.env`):
 
 ```bash

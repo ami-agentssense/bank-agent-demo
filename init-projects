@@ -1,0 +1,121 @@
+#!/usr/bin/env bash
+# Initialize bank-demo subprojects: .env from .env.example + uv sync.
+set -euo pipefail
+
+ROOT="$(cd "$(dirname "$0")" && pwd)"
+cd "$ROOT"
+
+PROJECTS=(
+  bank-rep-agent
+  bank-customer-agent
+  orchestrator
+)
+
+PLACEHOLDERS=(
+  your_anthropic_api_key_here
+  YOUR_ANTHROPIC_API_KEY
+  'sk-ant-...'
+)
+
+if ! command -v uv >/dev/null 2>&1; then
+  echo "Error: uv is not installed." >&2
+  echo "Install: https://docs.astral.sh/uv/getting-started/installation/" >&2
+  exit 1
+fi
+
+is_placeholder() {
+  local value="$1"
+  [[ -z "$value" ]] && return 0
+  local p
+  for p in "${PLACEHOLDERS[@]}"; do
+    [[ "$value" == "$p" ]] && return 0
+  done
+  return 1
+}
+
+prompt_api_key() {
+  local key=""
+  while true; do
+    read -rsp "Anthropic API key: " key
+    echo
+    key="${key#"${key%%[![:space:]]*}"}"
+    key="${key%"${key##*[![:space:]]}"}"
+    key="${key#\"}"
+    key="${key%\"}"
+    key="${key#\'}"
+    key="${key%\'}"
+    if ! is_placeholder "$key"; then
+      printf '%s' "$key"
+      return 0
+    fi
+    echo "Please enter a valid API key (not empty or a placeholder)." >&2
+  done
+}
+
+set_api_key_in_env() {
+  local env_file="$1"
+  local api_key="$2"
+  local tmp
+  tmp="$(mktemp)"
+  while IFS= read -r line || [[ -n "$line" ]]; do
+    if [[ "$line" == ANTHROPIC_API_KEY=* ]]; then
+      printf 'ANTHROPIC_API_KEY=%s\n' "$api_key" >>"$tmp"
+    else
+      printf '%s\n' "$line" >>"$tmp"
+    fi
+  done <"$env_file"
+  mv "$tmp" "$env_file"
+}
+
+prompt_overwrite() {
+  local project="$1"
+  local answer=""
+  read -rp "$project: .env exists. Overwrite from .env.example? [y/N] " answer
+  case "$answer" in
+    y | Y | yes | YES | Yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+API_KEY="$(prompt_api_key)"
+echo
+
+for project in "${PROJECTS[@]}"; do
+  dir="$ROOT/$project"
+  example="$dir/.env.example"
+  env_file="$dir/.env"
+
+  if [[ ! -d "$dir" ]]; then
+    echo "Error: missing directory $project" >&2
+    exit 1
+  fi
+  if [[ ! -f "$example" ]]; then
+    echo "Error: missing $project/.env.example" >&2
+    exit 1
+  fi
+
+  echo "=== $project ==="
+
+  if [[ -f "$env_file" ]]; then
+    if prompt_overwrite "$project"; then
+      cp "$example" "$env_file"
+      set_api_key_in_env "$env_file" "$API_KEY"
+      echo "  Created .env from .env.example (overwritten)."
+    else
+      echo "  Skipped .env (unchanged)."
+    fi
+  else
+    cp "$example" "$env_file"
+    set_api_key_in_env "$env_file" "$API_KEY"
+    echo "  Created .env from .env.example."
+  fi
+
+  echo "  → uv sync $project"
+  (cd "$dir" && uv sync)
+  echo
+done
+
+echo "Done. Next steps:"
+echo "  - bank-rep-agent:    see bank-rep-agent/README.md"
+echo "  - bank-customer-agent: see bank-customer-agent/README.md"
+echo "  - orchestrator:      cd orchestrator && uv run python main.py"
