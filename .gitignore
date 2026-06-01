@@ -1,6 +1,14 @@
+.DS_Store
+
+# bank-customer-agent
 .env
 __pycache__/
 *.py[cod]
 .pytest_cache/
 .venv/
 venv/
+
+# orchestrator
+orchestrator/.env
+
+orchestrator/.skill_index.json
