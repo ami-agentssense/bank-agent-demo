@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import Any
 
 from fastapi import FastAPI, HTTPException
@@ -19,6 +20,7 @@ app = FastAPI(title="Apex Bank API", version="0.1.0")
 
 _graph_app = build_app()
 _session_state: dict[str, Any] = _session_defaults()
+SERVER_SESSION_ID = str(uuid.uuid4())
 
 _PROMPT_BLUE = "\033[34m"
 _PROMPT_RESET = "\033[0m"
@@ -26,7 +28,10 @@ _PROMPT_RESET = "\033[0m"
 
 def _log_prompt(text: str, *, user: bool = False) -> None:
     prefix = "PROMPTS: USER: " if user else "PROMPTS: "
-    print(f"{_PROMPT_BLUE}{prefix}{text}{_PROMPT_RESET}", flush=True)
+    print(
+        f"{_PROMPT_BLUE}[session_id={SERVER_SESSION_ID}] {prefix}{text}{_PROMPT_RESET}",
+        flush=True,
+    )
 
 
 class ApiMessage(BaseModel):
@@ -49,6 +54,7 @@ class HealthResponse(BaseModel):
 def reset_session_state() -> None:
     global _session_state
     _session_state = _session_defaults()
+    _session_state["session_id"] = SERVER_SESSION_ID
     _log_greeting()
 
 
@@ -62,7 +68,7 @@ def _log_greeting() -> None:
     api_messages = get_session_messages()
     if not api_messages:
         return
-    print("Apex Bank — Jenny (API)\n", flush=True)
+    print(f"Apex Bank — Jenny (API) [session_id={SERVER_SESSION_ID}]\n", flush=True)
     _log_prompt(api_messages[0]["content"])
     print(flush=True)
 
@@ -132,4 +138,5 @@ def post_messages(body: MessagesRequest) -> MessagesResponse:
 
 @app.on_event("startup")
 def _on_startup() -> None:
+    _session_state["session_id"] = SERVER_SESSION_ID
     _log_greeting()

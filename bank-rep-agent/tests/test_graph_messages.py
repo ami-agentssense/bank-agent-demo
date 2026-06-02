@@ -4,6 +4,8 @@ from bank_demo.messages import to_api_messages
 
 def test_session_defaults_includes_greeting():
     session = _session_defaults()
+    assert "session_id" in session
+    assert session["session_id"] == ""
     api_messages = to_api_messages(session["messages"])
     assert len(api_messages) == 1
     assert api_messages[0]["role"] == "assistant"

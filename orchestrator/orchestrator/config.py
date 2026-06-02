@@ -44,7 +44,7 @@ def anthropic_key_error_message() -> str:
 
 
 def get_claude_model() -> str:
-    return os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001").strip()
+    return os.getenv("CLAUDE_MODEL", "claude-sonnet-4-20250514").strip()
 
 
 def get_bank_rep_base_url() -> str:

@@ -51,6 +51,7 @@ async def _run_bank_agent_async(
     session: dict[str, Any],
     user_message: str,
 ) -> str:
+    session_id = (session.get("session_id") or "").strip()
     customer = session.get("customer")
     if customer is None:
         tools = [make_customer_lookup_tool(session)]
@@ -82,11 +83,14 @@ async def _run_bank_agent_async(
             session=session,
         )
 
-    llm = ChatAnthropic(
-        api_key=get_anthropic_api_key(),
-        model=get_claude_model(),
-        max_tokens=2048,
-    )
+    llm_kwargs: dict[str, Any] = {
+        "api_key": get_anthropic_api_key(),
+        "model": get_claude_model(),
+        "max_tokens": 2048,
+    }
+    if session_id:
+        llm_kwargs["default_headers"] = {"X-Session-Id": session_id}
+    llm = ChatAnthropic(**llm_kwargs)
     agent = create_react_agent(llm, tools, prompt=system_prompt)
 
     messages: list[BaseMessage] = list(session.get("messages") or [])

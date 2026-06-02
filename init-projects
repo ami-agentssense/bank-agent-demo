@@ -36,7 +36,7 @@ is_placeholder() {
 prompt_api_key() {
   local key=""
   while true; do
-    read -rsp "Anthropic API key: " key
+    read -rp "Anthropic API key: " key
     echo
     key="${key#"${key%%[![:space:]]*}"}"
     key="${key%"${key##*[![:space:]]}"}"

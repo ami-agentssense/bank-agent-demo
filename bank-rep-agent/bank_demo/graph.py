@@ -13,6 +13,7 @@ from .utils import format_customer_menu, get_first_name
 
 def _session_defaults() -> dict[str, Any]:
     return {
+        "session_id": "",
         "verified_customer_id": None,
         "customer_id_prompted": True,
         "customer": None,
