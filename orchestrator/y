@@ -1,0 +1,13 @@
+Running…
+
+Session 1/1 elena_planned_borrower … running
+[#1 elena_planned_borrower] Failed after 1 turn(s): HTTP 500: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011
+[#1 elena_planned_borrower] Failed after 1 turn(s): HTTP 500: Error code: 401 - {'type': 'error', 'error': {'type': 'authentication_error', 'message': 'invalid x-api-key'}, 'request_id': 'req_011CbeS4oDEkQefDEASjmyEy'}
+Session 1/1 elena_planned_borrower … failed (1 turns)
+
+Sessions: 1 | OK: 0 | Failed: 1
+- #1 elena_planned_borrower: failed (1 turns)
+
+ç(base) ami@Amis-MacBook-Pro orchestrator % Type 'quit' to exit.
+/usr/bin/Type: line 4: type: quit: not found
+/usr/bin/Type: line 4: type: to: not found

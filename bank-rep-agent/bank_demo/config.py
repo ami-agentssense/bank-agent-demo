@@ -17,6 +17,16 @@ _PLACEHOLDER_VALUES = frozenset(
         "sk-ant-...",
     }
 )
+_OPENAI_PLACEHOLDER_VALUES = frozenset({"your_openai_api_key_here", "YOUR_OPENAI_API_KEY"})
+
+
+def _normalize_key(value: str | None) -> str | None:
+    if value is None:
+        return None
+    value = value.strip().strip('"').strip("'")
+    if value in _PLACEHOLDER_VALUES:
+        return None
+    return value
 
 
 def load_env() -> None:
@@ -27,11 +37,15 @@ def load_env() -> None:
 
 
 def get_anthropic_api_key() -> str | None:
-    key = os.getenv("ANTHROPIC_API_KEY")
+    return _normalize_key(os.getenv("ANTHROPIC_API_KEY"))
+
+
+def get_openai_api_key() -> str | None:
+    key = os.getenv("OPENAI_API_KEY")
+    key = _normalize_key(key)
     if key is None:
         return None
-    key = key.strip().strip('"').strip("'")
-    if key in _PLACEHOLDER_VALUES:
+    if key in _OPENAI_PLACEHOLDER_VALUES:
         return None
     return key
 
@@ -62,6 +76,17 @@ def get_claude_model() -> str:
     return os.getenv("CLAUDE_MODEL", "claude-haiku-4-5-20251001").strip()
 
 
+def get_openai_model() -> str:
+    return os.getenv("OPENAI_MODEL", "gpt-4o-mini").strip()
+
+
+def get_llm_provider() -> str:
+    provider = os.getenv("LLM_PROVIDER", "anthropic").strip().lower()
+    if provider in {"anthropic", "openai"}:
+        return provider
+    return "anthropic"
+
+
 def get_selective_skill_loading() -> bool:
     """When true, only relevant skill markdown files are appended to the system prompt."""
     val = os.getenv("SELECTIVE_SKILL_LOADING", "false").strip().lower()
@@ -86,3 +111,25 @@ def get_api_conversation_log() -> bool:
     """When true, POST /api/v1/messages prints each turn to the server terminal."""
     val = os.getenv("API_CONVERSATION_LOG", "true").strip().lower()
     return val in {"1", "true", "yes", "on"}
+
+
+def openai_key_error_message() -> str:
+    if not ENV_FILE.is_file():
+        return (
+            f"Missing `.env` file at {ENV_FILE}. "
+            "Copy `.env.example` to `.env` and set OPENAI_API_KEY."
+        )
+
+    from dotenv import dotenv_values
+
+    file_key = (dotenv_values(ENV_FILE).get("OPENAI_API_KEY") or "").strip()
+    if file_key in _PLACEHOLDER_VALUES or not file_key:
+        return (
+            f"Set a real OpenAI API key in `{ENV_FILE.name}` "
+            "(replace `your_openai_api_key_here`) and save the file."
+        )
+
+    return (
+        f"Could not load OPENAI_API_KEY from `{ENV_FILE}`. "
+        "Check the file format: OPENAI_API_KEY=sk-..."
+    )

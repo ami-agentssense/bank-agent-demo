@@ -1,6 +1,13 @@
 from __future__ import annotations
 
-from .config import anthropic_key_error_message, get_anthropic_api_key, load_env
+from .config import (
+    anthropic_key_error_message,
+    get_anthropic_api_key,
+    get_llm_provider,
+    get_openai_api_key,
+    load_env,
+    openai_key_error_message,
+)
 from .graph import build_app, _session_defaults
 from .messages import to_api_messages
 
@@ -8,7 +15,12 @@ from .messages import to_api_messages
 def run_cli() -> None:
     load_env()
 
-    if not get_anthropic_api_key():
+    provider = get_llm_provider()
+    if provider == "openai":
+        if not get_openai_api_key():
+            print(openai_key_error_message())
+            return
+    elif not get_anthropic_api_key():
         print(anthropic_key_error_message())
         return
 

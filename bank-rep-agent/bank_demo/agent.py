@@ -4,14 +4,18 @@ import asyncio
 from typing import Any
 
 from langchain_anthropic import ChatAnthropic
+from langchain_openai import ChatOpenAI
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langgraph.prebuilt import create_react_agent
 
 from .config import (
     get_anthropic_api_key,
     get_claude_model,
+    get_llm_provider,
     get_mcp_frankfurter_enabled,
     get_mcp_frankfurter_url,
+    get_openai_api_key,
+    get_openai_model,
 )
 from .mcp_tools import get_frankfurter_mcp_tools_async
 from .mock_data import STOCKS
@@ -44,6 +48,28 @@ def run_bank_agent(
     user_message: str,
 ) -> str:
     return asyncio.run(_run_bank_agent_async(session=session, user_message=user_message))
+
+
+def _build_llm(*, session_id: str):
+    provider = get_llm_provider()
+    if provider == "openai":
+        llm_kwargs: dict[str, Any] = {
+            "api_key": get_openai_api_key(),
+            "model": get_openai_model(),
+            "max_tokens": 2048,
+        }
+        if session_id:
+            llm_kwargs["default_headers"] = {"X-Session-Id": session_id}
+        return ChatOpenAI(**llm_kwargs)
+
+    llm_kwargs = {
+        "api_key": get_anthropic_api_key(),
+        "model": get_claude_model(),
+        "max_tokens": 2048,
+    }
+    if session_id:
+        llm_kwargs["default_headers"] = {"X-Session-Id": session_id}
+    return ChatAnthropic(**llm_kwargs)
 
 
 async def _run_bank_agent_async(
@@ -83,14 +109,7 @@ async def _run_bank_agent_async(
             session=session,
         )
 
-    llm_kwargs: dict[str, Any] = {
-        "api_key": get_anthropic_api_key(),
-        "model": get_claude_model(),
-        "max_tokens": 2048,
-    }
-    if session_id:
-        llm_kwargs["default_headers"] = {"X-Session-Id": session_id}
-    llm = ChatAnthropic(**llm_kwargs)
+    llm = _build_llm(session_id=session_id)
     agent = create_react_agent(llm, tools, prompt=system_prompt)
 
     messages: list[BaseMessage] = list(session.get("messages") or [])
